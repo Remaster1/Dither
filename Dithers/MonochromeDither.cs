@@ -1,4 +1,6 @@
 ﻿
+using System.Drawing.Imaging;
+
 namespace Dither.Dithers
 {
     internal class MonochromeDither
@@ -34,18 +36,29 @@ namespace Dither.Dithers
         public Bitmap Convert(Bitmap original)
         {
             Bitmap bitmap = new Bitmap(original);
-            double[,] errors = new double[bitmap.Height, bitmap.Width];
-            for (int y = 0; y < original.Height; y++)
+            
+            BitmapData bmpData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppRgb);
+            int width = bmpData.Width;
+            int height = bmpData.Height;
+            try
             {
-                for (int x = 0; x < original.Width; x++)
+                double[,] errors = new double[height, width];
+                for (int y = 0; y < height; y++)
                 {
-                    Color pixelColor = bitmap.GetPixel(x, y);
-                    double grayscale = ConvertRgbToGray(pixelColor.R, pixelColor.G, pixelColor.B) + errors[y, x];
-                    int color = (grayscale > 128) ? 255 : 0;
-                    double error = grayscale - color;
-                    SpreadError(errors, x, y, bitmap.Width, bitmap.Height, error);
-                    bitmap.SetPixel(x, y, Color.FromArgb(color, color, color));
+                    for (int x = 0; x < width; x++)
+                    {
+                        Color pixelColor = UnsafeBitmapHelper.GetPixelUnsafe(bmpData,x,y);
+                        double grayscale = ConvertRgbToGray(pixelColor.R, pixelColor.G, pixelColor.B) + errors[y, x];
+                        int color = (grayscale > 128) ? 255 : 0;
+                        double error = grayscale - color;
+                        SpreadError(errors, x, y, width, height, error);
+                        UnsafeBitmapHelper.SetPixelUnsafe(bmpData,x,y,Color.FromArgb(color, color, color));
+                    }
                 }
+            }
+            finally
+            {
+                bitmap.UnlockBits(bmpData);
             }
             return bitmap;
         }

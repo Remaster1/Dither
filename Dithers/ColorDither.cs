@@ -1,4 +1,7 @@
-﻿namespace Dither.Dithers
+﻿using System.Drawing;
+using System.Drawing.Imaging;
+
+namespace Dither.Dithers
 {
     internal class ColorDither 
     {
@@ -59,27 +62,40 @@
         public Bitmap Convert(Bitmap original)
         {
             Bitmap bitmap = new Bitmap(original);
-            double[,,] errors = new double[bitmap.Height, bitmap.Width, 3];
-            for (int y = 0; y < original.Height; y++)
+            BitmapData bmpData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppRgb);
+            int width = bmpData.Width;
+            int height = bmpData.Height;
+            try
             {
-                for (int x = 0; x < original.Width; x++)
+                double[,,] errors = new double[bmpData.Height, bmpData.Width, 3];
+
+                for (int y = 0; y < height; y++)
                 {
-                    Color pixelColor = bitmap.GetPixel(x, y);
-                    
-                    int correctedR = Math.Clamp(System.Convert.ToInt32(pixelColor.R + errors[y, x, 0]), 0, 255);
-                    int correctedG = Math.Clamp(System.Convert.ToInt32(pixelColor.G + errors[y, x, 1]), 0, 255);
-                    int correctedB = Math.Clamp(System.Convert.ToInt32(pixelColor.B + errors[y, x, 2]), 0, 255);
+                    for (int x = 0; x < width; x++)
+                    {
+                        Color color = UnsafeBitmapHelper.GetPixelUnsafe(bmpData, x, y);
 
-                    Color newColor = FindClosestColor(Color.FromArgb(correctedR, correctedG, correctedB), _palette);
 
-                    double errorR = correctedR - newColor.R;
-                    double errorG = correctedG - newColor.G;
-                    double errorB = correctedB - newColor.B;
+                        int correctedR = Math.Clamp((int)(color.R + errors[y, x, 0]), 0, 255);
+                        int correctedG = Math.Clamp((int)(color.G + errors[y, x, 1]), 0, 255);
+                        int correctedB = Math.Clamp((int)(color.B + errors[y, x, 2]), 0, 255);
 
-                    SpreadError(errors, x, y, bitmap.Width, bitmap.Height, errorR, errorG, errorB);
+                        Color newColor = FindClosestColor(Color.FromArgb(correctedR, correctedG, correctedB), _palette);
 
-                    bitmap.SetPixel(x, y, newColor);
+                        double errorR = correctedR - newColor.R;
+                        double errorG = correctedG - newColor.G;
+                        double errorB = correctedB - newColor.B;
+
+                        SpreadError(errors, x, y, width, height, errorR, errorG, errorB);
+
+                        UnsafeBitmapHelper.SetPixelUnsafe(bmpData, x, y, newColor);
+
+                    }
                 }
+            }
+            finally
+            {
+                bitmap.UnlockBits(bmpData);
             }
             return bitmap;
         }
