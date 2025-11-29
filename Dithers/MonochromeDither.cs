@@ -12,12 +12,12 @@ namespace Dither.Dithers
             this._algorithm = algorithm;
         }
 
-        private double ConvertRgbToGray(int r, int g, int b)
+        private int ConvertRgbToGray(int r, int g, int b)
         {
-            return 0.299 * r + 0.587 * g + 0.114 * b;
+            return System.Convert.ToInt32(0.299 * r + 0.587 * g + 0.114 * b);
         }
 
-        private void SpreadError(double[,] errors, int x, int y, int width, int height, double error)
+        private void SpreadError(float[,] errors, int x, int y, int width, int height, int error)
         {
 
             for (int i = 0; i < _algorithm.Formula.GetLength(0); i++)
@@ -29,7 +29,7 @@ namespace Dither.Dithers
                     if (_algorithm.Formula[i, j] == 0 || (j == _algorithm.StartPixelPositionInFormulaX && i == _algorithm.StartPixelPositionInFormulaY)) continue;
                     if ((diffX + x < width) && (diffX + x >= 0) &&
                         (diffY + y < height) && (diffY + y >= 0))
-                        errors[y + diffY, x + diffX] += error * _algorithm.Formula[i, j];
+                        errors[y + diffY, x + diffX] += error * (float)_algorithm.Formula[i, j];
                 }
         }
 
@@ -42,15 +42,15 @@ namespace Dither.Dithers
             int height = bmpData.Height;
             try
             {
-                double[,] errors = new double[height, width];
+                float[,] errors = new float[height, width];
                 for (int y = 0; y < height; y++)
                 {
                     for (int x = 0; x < width; x++)
                     {
                         Color pixelColor = UnsafeBitmapHelper.GetPixelUnsafe(bmpData,x,y);
-                        double grayscale = ConvertRgbToGray(pixelColor.R, pixelColor.G, pixelColor.B) + errors[y, x];
+                        int grayscale = ConvertRgbToGray(pixelColor.R, pixelColor.G, pixelColor.B) + System.Convert.ToInt32(errors[y, x]);
                         int color = (grayscale > 128) ? 255 : 0;
-                        double error = grayscale - color;
+                        int error = grayscale - color;
                         SpreadError(errors, x, y, width, height, error);
                         UnsafeBitmapHelper.SetPixelUnsafe(bmpData,x,y,Color.FromArgb(color, color, color));
                     }

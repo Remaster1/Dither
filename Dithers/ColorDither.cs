@@ -14,22 +14,22 @@ namespace Dither.Dithers
             this._algorithm = algorithm;
         }
 
-        private double CalculateColorDifference(Color originalColor, Color newColor)
+        private int CalculateColorDifference(Color originalColor, Color newColor)
         {
             int deltaR = originalColor.R - newColor.R;
             int deltaG = originalColor.G - newColor.G;
             int deltaB = originalColor.B - newColor.B;
 
-            return Math.Sqrt(deltaR * deltaR + deltaG * deltaG + deltaB * deltaB);
+            return (299 * deltaR * deltaR + 587 * deltaG * deltaG + 114 * deltaB * deltaB) / 1000;
         }
 
         private Color FindClosestColor(Color originalColor, Palette palette)
         {
             Color color = palette.Colors[0];
-            double val = double.MaxValue;
+            int val = int.MaxValue;
             foreach (Color paletteColor in palette.Colors)
             {
-                double colorDiff = CalculateColorDifference(originalColor, paletteColor);
+                int colorDiff = CalculateColorDifference(originalColor, paletteColor);
                 if (val >= colorDiff)
                 {
                     val = colorDiff;
@@ -39,7 +39,7 @@ namespace Dither.Dithers
             return color;
         }
 
-        private void SpreadError(double[,,] errors, int x, int y, int width, int height, double errorR, double errorG, double errorB)
+        private void SpreadError(float[,,] errors, int x, int y, int width, int height, int errorR, int errorG, int errorB)
         {
 
             for (int i = 0; i < _algorithm.Formula.GetLength(0); i++)
@@ -52,9 +52,10 @@ namespace Dither.Dithers
                     if ((diffX + x < width) && (diffX + x >= 0) &&
                         (diffY + y < height) && (diffY + y >= 0))
                     {
-                        errors[y + diffY, x + diffX, 0] += errorR * _algorithm.Formula[i, j];
-                        errors[y + diffY, x + diffX, 1] += errorG * _algorithm.Formula[i, j];
-                        errors[y + diffY, x + diffX, 2] += errorB * _algorithm.Formula[i, j];
+                        float coefficient = (float)_algorithm.Formula[i, j];
+                        errors[y + diffY, x + diffX, 0] += errorR * coefficient;
+                        errors[y + diffY, x + diffX, 1] += errorG * coefficient;
+                        errors[y + diffY, x + diffX, 2] += errorB * coefficient;
                     }    
                 }
         }
@@ -67,7 +68,7 @@ namespace Dither.Dithers
             int height = bmpData.Height;
             try
             {
-                double[,,] errors = new double[bmpData.Height, bmpData.Width, 3];
+                float[,,] errors = new float[bmpData.Height, bmpData.Width, 3];
 
                 for (int y = 0; y < height; y++)
                 {
@@ -76,15 +77,15 @@ namespace Dither.Dithers
                         Color color = UnsafeBitmapHelper.GetPixelUnsafe(bmpData, x, y);
 
 
-                        int correctedR = Math.Clamp((int)(color.R + errors[y, x, 0]), 0, 255);
-                        int correctedG = Math.Clamp((int)(color.G + errors[y, x, 1]), 0, 255);
-                        int correctedB = Math.Clamp((int)(color.B + errors[y, x, 2]), 0, 255);
+                        int correctedR = Math.Clamp(System.Convert.ToInt32(color.R + errors[y, x, 0]), 0, 255);
+                        int correctedG = Math.Clamp(System.Convert.ToInt32(color.G + errors[y, x, 1]), 0, 255);
+                        int correctedB = Math.Clamp(System.Convert.ToInt32(color.B + errors[y, x, 2]), 0, 255);
 
                         Color newColor = FindClosestColor(Color.FromArgb(correctedR, correctedG, correctedB), _palette);
 
-                        double errorR = correctedR - newColor.R;
-                        double errorG = correctedG - newColor.G;
-                        double errorB = correctedB - newColor.B;
+                        int errorR = correctedR - newColor.R;
+                        int errorG = correctedG - newColor.G;
+                        int errorB = correctedB - newColor.B;
 
                         SpreadError(errors, x, y, width, height, errorR, errorG, errorB);
 
