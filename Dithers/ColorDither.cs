@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using System.Drawing.Imaging;
+﻿using System.Drawing.Imaging;
 
 namespace Dither.Dithers
 {
@@ -39,25 +38,54 @@ namespace Dither.Dithers
             return color;
         }
 
-        private void SpreadError(float[,,] errors, int x, int y, int width, int height, int errorR, int errorG, int errorB)
+        private void SpreadError(float[,,] errors, int pixelX, int errorR, int errorG, int errorB)
         {
-
+           
             for (int i = 0; i < _algorithm.Formula.GetLength(0); i++)
+            {
                 for (int j = 0; j < _algorithm.Formula.GetLength(1); j++)
                 {
                     int diffY = i - _algorithm.StartPixelPositionInFormulaY;
                     int diffX = j - _algorithm.StartPixelPositionInFormulaX;
 
                     if (_algorithm.Formula[i, j] == 0 || (j == _algorithm.StartPixelPositionInFormulaX && i == _algorithm.StartPixelPositionInFormulaY)) continue;
-                    if ((diffX + x < width) && (diffX + x >= 0) &&
-                        (diffY + y < height) && (diffY + y >= 0))
+
+                    int x = pixelX + diffX;
+                    int y = diffY;
+                    
+                    if(x >= 0 && x < errors.GetLength(1) && y >= 0 && y < errors.GetLength(0))
                     {
                         float coefficient = (float)_algorithm.Formula[i, j];
-                        errors[y + diffY, x + diffX, 0] += errorR * coefficient;
-                        errors[y + diffY, x + diffX, 1] += errorG * coefficient;
-                        errors[y + diffY, x + diffX, 2] += errorB * coefficient;
-                    }    
+                        errors[y, x, 0] += errorR * coefficient;
+                        errors[y, x, 1] += errorG * coefficient;
+                        errors[y, x, 2] += errorB * coefficient;
+                    }     
                 }
+            }
+        }
+      
+
+        private void shiftUpMatrix(float[,,] errors)
+        {
+            for (int i = 0; i < errors.GetLength(0); i++)
+            {
+                for (int j = 0; j < errors.GetLength(1); j++)
+                {
+                    if(i == 0) {
+                        for (int k = 0; k < errors.GetLength(2); k++)
+                        {
+                            errors[i, j, k] = 0;
+                        }
+                        continue; 
+                    }
+                    for (int k = 0; k < errors.GetLength(2); k++)
+                    {
+                        errors[i - 1, j, k] = errors[i, j, k];
+                        errors[i, j, k] = 0;
+                    }
+                    
+                }
+            }
         }
 
         public Bitmap Convert(Bitmap original)
@@ -68,7 +96,7 @@ namespace Dither.Dithers
             int height = bmpData.Height;
             try
             {
-                float[,,] errors = new float[bmpData.Height, bmpData.Width, 3];
+                float[,,] errors = new float[_algorithm.Formula.GetLength(0), bmpData.Width, 3];
 
                 for (int y = 0; y < height; y++)
                 {
@@ -77,9 +105,9 @@ namespace Dither.Dithers
                         Color color = UnsafeBitmapHelper.GetPixelUnsafe(bmpData, x, y);
 
 
-                        int correctedR = Math.Clamp(System.Convert.ToInt32(color.R + errors[y, x, 0]), 0, 255);
-                        int correctedG = Math.Clamp(System.Convert.ToInt32(color.G + errors[y, x, 1]), 0, 255);
-                        int correctedB = Math.Clamp(System.Convert.ToInt32(color.B + errors[y, x, 2]), 0, 255);
+                        int correctedR = Math.Clamp(System.Convert.ToInt32(color.R + errors[0, x, 0]), 0, 255);
+                        int correctedG = Math.Clamp(System.Convert.ToInt32(color.G + errors[0, x, 1]), 0, 255);
+                        int correctedB = Math.Clamp(System.Convert.ToInt32(color.B + errors[0, x, 2]), 0, 255);
 
                         Color newColor = FindClosestColor(Color.FromArgb(correctedR, correctedG, correctedB), _palette);
 
@@ -87,11 +115,12 @@ namespace Dither.Dithers
                         int errorG = correctedG - newColor.G;
                         int errorB = correctedB - newColor.B;
 
-                        SpreadError(errors, x, y, width, height, errorR, errorG, errorB);
+                        SpreadError(errors, x, errorR, errorG, errorB);
 
                         UnsafeBitmapHelper.SetPixelUnsafe(bmpData, x, y, newColor);
 
                     }
+                    shiftUpMatrix(errors);
                 }
             }
             finally
