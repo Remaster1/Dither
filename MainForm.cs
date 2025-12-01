@@ -25,12 +25,12 @@ namespace Dither
             InitializeComponent();
             LocalizeControls();
             SetDitherMode(_selectedDither);
-            
-            ditherAlgorithmComboBox.DisplayMember = "Name";
-            ditherAlgorithmComboBox.DataSource = DitherAlgorithms.All;
 
-            paletteComboBox.DisplayMember = "Name";
-            paletteComboBox.DataSource = Palettes.All;
+            ditherAlgorithmComboBox.ComboBox.DisplayMember = "Name";
+            ditherAlgorithmComboBox.ComboBox.DataSource = DitherAlgorithms.All;
+
+            paletteComboBox.ComboBox.DisplayMember = "Name";
+            paletteComboBox.ComboBox.DataSource = Palettes.All;
         }
 
         private void LocalizeControls()
@@ -45,13 +45,13 @@ namespace Dither
 
             ditherAlgorithmLabel.Text = $@"{_locRm.GetString("ditherAlgorithmLabel")}:";
             paletteLabel.Text = $@"{_locRm.GetString("paletteLabel")}:";
-            
+
             applyButton.Text = _locRm.GetString("applyButton");
         }
 
         private void SetOriginalBitmap(Bitmap bitmap)
         {
-            if(bitmap == _originalBitmap) return;
+            if (bitmap == _originalBitmap) return;
             ClearOriginalBitmap();
             _originalBitmap = bitmap;
             originalPictureBox.Image = _originalBitmap;
@@ -59,7 +59,7 @@ namespace Dither
 
         private void SetDitheredBitmap(Bitmap bitmap)
         {
-            if(bitmap == _ditheredBitmap) return;
+            if (bitmap == _ditheredBitmap) return;
             ClearDitheredBitmap();
             _ditheredBitmap = bitmap;
             ditheredPictureBox.Image = _ditheredBitmap;
@@ -81,7 +81,7 @@ namespace Dither
 
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if(openFileDialog.ShowDialog() != DialogResult.OK) return;
+            if (openFileDialog.ShowDialog() != DialogResult.OK) return;
             try
             {
                 using Bitmap bitmap = (Bitmap)Image.FromFile(openFileDialog.FileName);
@@ -92,7 +92,7 @@ namespace Dither
                 MessageBox.Show($@"{_locRm.GetString("msgBoxLoadFileErrText")} ({ex.Message})", _locRm.GetString("msgBoxErrorCaption"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        
+
         private void colorToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SetDitherMode(SelectedDither.Color);
@@ -128,7 +128,7 @@ namespace Dither
                     return;
             }
         }
-        
+
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (_ditheredBitmap == null)
@@ -136,7 +136,7 @@ namespace Dither
                 MessageBox.Show(_locRm.GetString("msgBoxNotLoadFileErrText"), _locRm.GetString("msgBoxErrorCaption"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            if(saveFileDialog.ShowDialog() !=  DialogResult.OK) return;
+            if (saveFileDialog.ShowDialog() != DialogResult.OK) return;
             try
             {
                 _ditheredBitmap.Save(saveFileDialog.FileName, GetImageFormat(Path.GetExtension(saveFileDialog.FileName)));
@@ -166,8 +166,8 @@ namespace Dither
                 MessageBox.Show(_locRm.GetString("msgBoxNotLoadFileErrText"), _locRm.GetString("msgBoxErrorCaption"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            if(ditherAlgorithmComboBox.SelectedItem is not DitherAlgorithm algorithm) return;
-         
+            if (ditherAlgorithmComboBox.SelectedItem is not DitherAlgorithm algorithm) return;
+
             try
             {
                 Bitmap bitmap = _selectedDither switch
@@ -186,7 +186,7 @@ namespace Dither
             {
                 MessageBox.Show($@"{_locRm.GetString("msgBoxDitherErrText")} ({ex.Message})", _locRm.GetString("msgBoxErrorCaption"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            
+
         }
     }
 }
