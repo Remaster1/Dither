@@ -188,6 +188,7 @@
             panel2.Name = "panel2";
             panel2.Size = new Size(609, 480);
             panel2.TabIndex = 11;
+            panel2.Scroll += panel2_Scroll;
             // 
             // ditheredPictureBox
             // 
@@ -208,6 +209,7 @@
             panel1.Name = "panel1";
             panel1.Size = new Size(608, 480);
             panel1.TabIndex = 3;
+            panel1.Scroll += panel1_Scroll;
             // 
             // originalPictureBox
             // 

@@ -26,6 +26,9 @@ namespace Dither
             LocalizeControls();
             SetDitherMode(_selectedDither);
 
+            panel1.MouseWheel += panel1_MouseWheel;
+            panel2.MouseWheel += panel2_MouseWheel;
+
             ditherAlgorithmComboBox.ComboBox.DisplayMember = "Name";
             ditherAlgorithmComboBox.ComboBox.DataSource = DitherAlgorithms.All;
 
@@ -187,6 +190,43 @@ namespace Dither
                 MessageBox.Show($@"{_locRm.GetString("msgBoxDitherErrText")} ({ex.Message})", _locRm.GetString("msgBoxErrorCaption"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
+        }
+
+
+        private void SyncScrollbars(Panel sourcePanel, Panel targetPanel)
+        {
+            
+            if( sourcePanel.VerticalScroll.Visible && targetPanel.VerticalScroll.Visible)
+            {
+                int clampedValue = Math.Clamp(sourcePanel.VerticalScroll.Value, targetPanel.VerticalScroll.Minimum, targetPanel.VerticalScroll.Maximum);
+                targetPanel.VerticalScroll.Value = clampedValue;
+            }
+                
+            if (sourcePanel.HorizontalScroll.Visible && targetPanel.HorizontalScroll.Visible)
+            {
+                int clampedValue = Math.Clamp(sourcePanel.HorizontalScroll.Value, targetPanel.HorizontalScroll.Minimum, targetPanel.HorizontalScroll.Maximum);
+                targetPanel.HorizontalScroll.Value = clampedValue;
+            }
+                
+        }
+
+        private void panel1_MouseWheel(object sender, MouseEventArgs e)
+        {
+            SyncScrollbars(panel1, panel2);
+        }
+        private void panel1_Scroll(object sender, ScrollEventArgs e)
+        {
+            SyncScrollbars(panel1, panel2);
+        }
+
+        private void panel2_MouseWheel(object sender, MouseEventArgs e)
+        {
+            SyncScrollbars(panel2, panel1);
+        }
+
+        private void panel2_Scroll(object sender, ScrollEventArgs e)
+        {
+            SyncScrollbars(panel2, panel1);
         }
     }
 }
